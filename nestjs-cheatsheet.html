@@ -1,0 +1,976 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>NestJS Cheatsheet</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: sticky table of contents on the left, one long reference on the right.
+     Sections are ordered the way a request travels through a Nest app. */
+  :root {
+    --bg: #f3f4f7;
+    --surface: #ffffff;
+    --ink: #14181f;
+    --muted: #596273;
+    --line: #dde1e8;
+    --accent: #d11a46;
+    --accent-soft: #fde9ef;
+    --code-bg: #eceff4;
+    --code-ink: #1b2330;
+    --code-comment: #6a7587;
+    --code-string: #0b7a53;
+    --good: #1b7a4b;
+    --warn: #9a5b00;
+    --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+    --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    --font-code: "JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0d1015; --surface: #151a21; --ink: #e6e9ee; --muted: #9aa3b0; --line: #262d38;
+      --accent: #ff6285; --accent-soft: #3a1823; --code-bg: #0a0d11; --code-ink: #d9dee6;
+      --code-comment: #7d8797; --code-string: #5fd3a1; --good: #4cc38a; --warn: #e3a64a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1015; --surface: #151a21; --ink: #e6e9ee; --muted: #9aa3b0; --line: #262d38;
+    --accent: #ff6285; --accent-soft: #3a1823; --code-bg: #0a0d11; --code-ink: #d9dee6;
+    --code-comment: #7d8797; --code-string: #5fd3a1; --good: #4cc38a; --warn: #e3a64a;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { scroll-behavior: smooth; scroll-padding-top: 1.25rem; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 400 15px/1.6 var(--font-body);
+    padding-block: 1.5rem 4rem;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  a { color: var(--accent); text-underline-offset: 3px; }
+  a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+  .page { max-width: 78rem; margin: 0 auto; }
+
+  /* Header */
+  .top { display: grid; gap: 1rem; margin-bottom: 2rem; }
+  .top h1 { font: 700 clamp(2rem, 5vw, 3.1rem)/1.05 var(--font-display); margin: 0; letter-spacing: -0.02em; text-wrap: balance; }
+  .top h1 span { color: var(--accent); }
+  .top p { margin: 0; color: var(--muted); max-width: 46rem; }
+  .search {
+    width: 100%; max-width: 30rem; font: inherit; color: var(--ink); background: var(--surface);
+    border: 1px solid var(--line); border-radius: 6px; padding: 0.6rem 0.8rem;
+  }
+  .search::placeholder { color: var(--muted); }
+
+  /* Two-column shell */
+  .shell { display: grid; grid-template-columns: 13.5rem minmax(0, 1fr); gap: 2.5rem; align-items: start; }
+  .toc { position: sticky; top: 1rem; display: grid; gap: 1.1rem; font-size: 0.85rem; max-height: calc(100vh - 2rem); overflow-y: auto; padding-right: 0.5rem; }
+  .toc h2 { font: 600 0.68rem/1 var(--font-body); text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin: 0 0 0.4rem; }
+  .toc ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.1rem; }
+  .toc a { display: block; padding: 0.2rem 0.5rem; margin-left: -0.5rem; border-radius: 4px; color: var(--ink); text-decoration: none; }
+  .toc a:hover { background: var(--accent-soft); color: var(--accent); }
+
+  /* Sections */
+  main { min-width: 0; display: grid; gap: 3rem; }
+  section { min-width: 0; }
+  section > header { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding-bottom: 0.5rem; margin-bottom: 1rem; }
+  section h2 { font: 700 1.55rem/1.2 var(--font-display); margin: 0; letter-spacing: -0.01em; }
+  .docs-link { font-size: 0.8rem; white-space: nowrap; }
+  .lead { color: var(--muted); margin: 0 0 1rem; max-width: 46rem; }
+
+  .entries { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr)); gap: 1rem; }
+  .entry { min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 1rem; display: grid; gap: 0.6rem; align-content: start; }
+  .entry.wide { grid-column: 1 / -1; }
+  .entry h3 { font: 600 1rem/1.3 var(--font-display); margin: 0; }
+  .entry p { margin: 0; }
+  .entry ul, .entry ol { margin: 0; padding-left: 1.2rem; display: grid; gap: 0.25rem; }
+  .muted { color: var(--muted); }
+  .small { font-size: 0.85rem; }
+
+  code { font: 500 0.85em var(--font-code); background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 4px; overflow-wrap: anywhere; }
+  .code { position: relative; min-width: 0; }
+  pre { margin: 0; background: var(--code-bg); color: var(--code-ink); border-radius: 6px; padding: 0.85rem 1rem; overflow-x: auto; font: 400 0.82rem/1.55 var(--font-code); tab-size: 2; }
+  pre code { background: none; padding: 0; font: inherit; overflow-wrap: normal; }
+  .c { color: var(--code-comment); }
+  .s { color: var(--code-string); }
+  .d { color: var(--accent); }
+  .copy { position: absolute; top: 0.4rem; right: 0.4rem; font: 500 0.7rem var(--font-body); color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 0.15rem 0.5rem; cursor: pointer; }
+  .copy:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* Request pipeline diagram */
+  .flow { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: stretch; list-style: none; margin: 0; padding: 0; }
+  .flow li { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 0.55rem 0.8rem; font-size: 0.85rem; display: grid; gap: 0.1rem; min-width: 7.5rem; flex: 1 1 7.5rem; }
+  .flow li b { font: 600 0.92rem var(--font-display); }
+  .flow li span { color: var(--muted); font-size: 0.78rem; }
+  .flow li.yours { border-color: var(--accent); background: var(--accent-soft); }
+  .flow-note { margin: 0.75rem 0 0; font-size: 0.85rem; color: var(--muted); }
+
+  /* Tables */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+  th, td { text-align: left; padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  th { font: 600 0.7rem var(--font-body); text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); background: var(--bg); }
+  td:first-child { white-space: nowrap; font-weight: 500; }
+  td.wrap { white-space: normal; }
+
+  .tag { display: inline-block; font: 600 0.68rem/1 var(--font-body); text-transform: uppercase; letter-spacing: 0.08em; padding: 0.25rem 0.45rem; border-radius: 4px; }
+  .tag.do { color: var(--good); background: color-mix(in srgb, var(--good) 14%, transparent); }
+  .tag.avoid { color: var(--warn); background: color-mix(in srgb, var(--warn) 16%, transparent); }
+  .rules { list-style: none; padding: 0 !important; display: grid; gap: 0.6rem !important; }
+  .rules li { display: grid; grid-template-columns: 4.2rem minmax(0, 1fr); gap: 0.6rem; align-items: baseline; }
+
+  .empty { display: none; color: var(--muted); padding: 2rem 0; }
+  .empty.show { display: block; }
+
+  @media (max-width: 860px) {
+    .shell { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+    .toc { position: static; max-height: none; overflow: visible; padding: 0; }
+    .toc ul { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .toc a { border: 1px solid var(--line); background: var(--surface); margin: 0; padding: 0.25rem 0.6rem; }
+    .toc h2 { display: none; }
+  }
+</style>
+
+<div class="page">
+  <header class="top">
+    <h1>Nest<span>JS</span> cheatsheet</h1>
+    <p>For the developer who finished the hello-world and now needs to know where things go, which built-in to reach for, and what to avoid. Examples come from the helpdesk-lite tickets feature. Target: current Nest, ESM, Vitest. Want the short one? <a href="nestjs-quick-cheatsheet.html">Open the 2-page quick sheet</a>.</p>
+    <input class="search" id="search" type="search" placeholder="Filter: guard, pipe, config, test, prisma..." aria-label="Filter the cheatsheet" autocomplete="off">
+  </header>
+
+  <div class="shell">
+    <nav class="toc" aria-label="Sections">
+      <div>
+        <h2>Foundations</h2>
+        <ul>
+          <li><a href="#pipeline">Request pipeline</a></li>
+          <li><a href="#blocks">Modules, controllers</a></li>
+          <li><a href="#providers">Providers and DI</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>Pipeline pieces</h2>
+        <ul>
+          <li><a href="#validation">Validation and pipes</a></li>
+          <li><a href="#exceptions">Exceptions, filters</a></li>
+          <li><a href="#guards">Guards, auth</a></li>
+          <li><a href="#interceptors">Interceptors</a></li>
+          <li><a href="#decorators">Custom decorators</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>The app around it</h2>
+        <ul>
+          <li><a href="#config">Configuration</a></li>
+          <li><a href="#data">Data, serialization</a></li>
+          <li><a href="#logging">Logging</a></li>
+          <li><a href="#testing">Testing</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>Toolbox</h2>
+        <ul>
+          <li><a href="#packages">Built-in packages</a></li>
+          <li><a href="#beyond">Beyond REST</a></li>
+          <li><a href="#cli">CLI and ESM</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>Habits</h2>
+        <ul>
+          <li><a href="#practices">Good practice</a></li>
+          <li><a href="#errors">Common errors</a></li>
+        </ul>
+      </div>
+    </nav>
+
+    <main id="content">
+
+      <!-- ============ PIPELINE ============ -->
+      <section id="pipeline">
+        <header><h2>The request pipeline</h2><a class="docs-link" href="https://docs.nestjs.com/faq/request-lifecycle" target="_blank" rel="noopener">docs: request lifecycle</a></header>
+        <p class="lead">Almost every Nest question is "which stage does this belong in?". A request passes the same stages in the same order every time.</p>
+        <div class="entry wide" data-k="request lifecycle order middleware guard interceptor pipe filter">
+          <ol class="flow">
+            <li><b>Middleware</b><span>raw req/res, runs first</span></li>
+            <li class="yours"><b>Guards</b><span>allowed in? yes/no</span></li>
+            <li class="yours"><b>Interceptors</b><span>before handler</span></li>
+            <li class="yours"><b>Pipes</b><span>validate, transform</span></li>
+            <li><b>Handler</b><span>controller method, then service</span></li>
+            <li class="yours"><b>Interceptors</b><span>after handler</span></li>
+            <li><b>Response</b><span>sent to client</span></li>
+          </ol>
+          <p class="flow-note">An exception thrown at any stage skips the rest and goes to <b>Exception filters</b>, which build the error response. Shaded stages are the ones you write most.</p>
+        </div>
+        <div class="table-wrap" style="margin-top:1rem" data-k="which tool picker need use">
+          <table>
+            <thead><tr><th>I need to...</th><th>Use</th><th class="wrap">Example</th></tr></thead>
+            <tbody>
+              <tr><td>Run code on every request (logging, headers)</td><td>Middleware</td><td class="wrap">Request id, CORS-like tweaks</td></tr>
+              <tr><td>Allow or block a route</td><td>Guard</td><td class="wrap">Logged in? Has role?</td></tr>
+              <tr><td>Check or convert input</td><td>Pipe</td><td class="wrap"><code>ParseIntPipe</code>, <code>ValidationPipe</code></td></tr>
+              <tr><td>Wrap the handler (timing, cache, reshape output)</td><td>Interceptor</td><td class="wrap">Log duration, timeout, response envelope</td></tr>
+              <tr><td>Turn errors into HTTP responses</td><td>Exception filter</td><td class="wrap">One error shape for the whole API</td></tr>
+              <tr><td>Reuse "who is the current user" in handlers</td><td>Param decorator</td><td class="wrap"><code>@CurrentUser()</code></td></tr>
+              <tr><td>Share business logic between classes</td><td>Provider (service)</td><td class="wrap"><code>TicketsService</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ BLOCKS ============ -->
+      <section id="blocks">
+        <header><h2>Modules and controllers</h2><a class="docs-link" href="https://docs.nestjs.com/modules" target="_blank" rel="noopener">docs: modules</a></header>
+        <div class="entries">
+          <article class="entry" data-k="module imports exports providers controllers">
+            <h3>Module: one per feature</h3>
+            <p class="small muted">A module is a box. Nothing leaves it unless it is exported, and nothing enters unless it is imported.</p>
+            <div class="code"><pre><code>@Module({
+  imports: [UsersModule],         // modules whose exports I need
+  controllers: [TicketsController],
+  providers: [TicketsService],
+  exports: [TicketsService],      // what other modules may inject
+})
+export class TicketsModule {}</code></pre></div>
+            <p class="small"><code>@Global()</code> skips the import step. Keep it for config and logging only.</p>
+          </article>
+
+          <article class="entry" data-k="controller routes decorators get post patch delete param query body">
+            <h3>Controller: thin HTTP layer</h3>
+            <div class="code"><pre><code>@Controller('tickets')
+export class TicketsController {
+  constructor(private readonly tickets: TicketsService) {}
+
+  @Get(':id')
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.tickets.findOne(id);
+  }
+
+  @Patch(':id')
+  @HttpCode(200)
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateTicketDto) {
+    return this.tickets.update(id, dto);
+  }
+}</code></pre></div>
+            <p class="small muted">Read the request, call the service, return. No business rules here.</p>
+          </article>
+
+          <article class="entry wide" data-k="decorators param query body headers httpcode header redirect req res status code">
+            <h3>Handler decorators you will use</h3>
+            <div class="table-wrap"><table>
+              <thead><tr><th>Decorator</th><th>Gives you</th></tr></thead>
+              <tbody>
+                <tr><td><code>@Get() @Post() @Put() @Patch() @Delete()</code></td><td class="wrap">HTTP method and path. <code>PATCH</code> for partial update, <code>PUT</code> for full replace.</td></tr>
+                <tr><td><code>@Param('id')</code></td><td class="wrap">URL segment. Always a string, so add <code>ParseIntPipe</code> or <code>ParseUUIDPipe</code>.</td></tr>
+                <tr><td><code>@Query()</code></td><td class="wrap">Query string. Use a DTO class to validate it.</td></tr>
+                <tr><td><code>@Body()</code></td><td class="wrap">Request body, validated against the DTO type.</td></tr>
+                <tr><td><code>@Headers('x-api-key')</code></td><td class="wrap">One request header.</td></tr>
+                <tr><td><code>@HttpCode(204)</code></td><td class="wrap">Override the status code. POST defaults to 201, others to 200.</td></tr>
+                <tr><td><code>@Header('Cache-Control', 'no-store')</code></td><td class="wrap">Set a response header.</td></tr>
+                <tr><td><code>@Redirect(url, 302)</code></td><td class="wrap">Redirect response.</td></tr>
+                <tr><td><code>@Req() @Res()</code></td><td class="wrap">Raw Express/adapter objects. Avoid. <code>@Res()</code> switches off interceptors and automatic responses.</td></tr>
+              </tbody>
+            </table></div>
+          </article>
+
+          <article class="entry" data-k="route order param static conflict versioning prefix">
+            <h3>Route order matters</h3>
+            <p class="small">Nest matches in declaration order. Put static routes before parameter routes.</p>
+            <div class="code"><pre><code>@Get('stats')   // declare first
+stats() {}
+
+@Get(':id')     // would swallow "stats" if it came first
+findOne() {}</code></pre></div>
+            <p class="small">Global prefix: <code>app.setGlobalPrefix('api')</code> (done in <code>main.ts</code>). API versions: <code>app.enableVersioning()</code>, then <code>@Controller({ path: 'tickets', version: '1' })</code>.</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- ============ PROVIDERS ============ -->
+      <section id="providers">
+        <header><h2>Providers and dependency injection</h2><a class="docs-link" href="https://docs.nestjs.com/fundamentals/custom-providers" target="_blank" rel="noopener">docs: custom providers</a></header>
+        <p class="lead">A provider is any class Nest can build and hand to others. You ask for it in a constructor, and Nest supplies it. Never write <code>new TicketsService()</code>.</p>
+        <div class="entries">
+          <article class="entry" data-k="injectable service provider constructor injection">
+            <h3>Service</h3>
+            <div class="code"><pre><code>@Injectable()
+export class TicketsService {
+  // Nest sees the parameter type and injects it
+  constructor(private readonly mailer: MailerService) {}
+}</code></pre></div>
+            <p class="small">Must be listed in a module's <code>providers</code>. If another module needs it, export it and import that module.</p>
+          </article>
+
+          <article class="entry" data-k="custom provider useclass usevalue usefactory useexisting inject token">
+            <h3>Custom providers</h3>
+            <div class="code"><pre><code>providers: [
+  // fixed value, injected by string token
+  { provide: 'MAIL_FROM', useValue: 'help@acme.dev' },
+
+  // swap an implementation (great for tests)
+  { provide: Mailer, useClass: SmtpMailer },
+
+  // build with other providers
+  {
+    provide: 'DB',
+    useFactory: (config: ConfigService) =&gt; connect(config.get('DB_URL')),
+    inject: [ConfigService],
+  },
+
+  // second name for an existing provider
+  { provide: 'LegacyMailer', useExisting: Mailer },
+]
+
+// consuming a token
+constructor(@Inject('MAIL_FROM') private readonly from: string) {}</code></pre></div>
+          </article>
+
+          <article class="entry" data-k="scope singleton request transient performance">
+            <h3>Scopes</h3>
+            <ul class="small">
+              <li><b>DEFAULT</b>: one shared instance for the whole app. Use this almost always.</li>
+              <li><b>REQUEST</b>: new instance per request. Everything that depends on it becomes request-scoped too, which costs speed.</li>
+              <li><b>TRANSIENT</b>: new instance per consumer.</li>
+            </ul>
+            <div class="code"><pre><code>@Injectable({ scope: Scope.REQUEST })</code></pre></div>
+            <p class="small muted">For per-request data such as the current user, prefer a param decorator or AsyncLocalStorage over request scope.</p>
+          </article>
+
+          <article class="entry" data-k="lifecycle hooks oninit onmoduleinit shutdown">
+            <h3>Lifecycle hooks</h3>
+            <div class="code"><pre><code>@Injectable()
+export class PrismaService implements OnModuleInit, OnApplicationShutdown {
+  async onModuleInit() { /* connect */ }
+  async onApplicationShutdown() { /* disconnect */ }
+}
+
+// main.ts: needed for shutdown hooks to fire on SIGTERM
+app.enableShutdownHooks();</code></pre></div>
+          </article>
+
+          <article class="entry" data-k="circular dependency forwardref">
+            <h3>Circular dependency</h3>
+            <p class="small">Two providers needing each other is a design smell. First try moving the shared part into a third service. Last resort: <code>@Inject(forwardRef(() =&gt; OtherService))</code> on both sides.</p>
+          </article>
+
+          <article class="entry" data-k="async provider module ref dynamic module forroot forrootasync">
+            <h3>Dynamic modules</h3>
+            <p class="small">Modules that take options: <code>ConfigModule.forRoot({...})</code>. The <code>forRootAsync</code> variant waits for config before building. You will use these long before you write one.</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- ============ VALIDATION ============ -->
+      <section id="validation">
+        <header><h2>Validation and pipes</h2><a class="docs-link" href="https://docs.nestjs.com/application/validation" target="_blank" rel="noopener">docs: validation</a></header>
+        <p class="lead">Never trust a request body. Describe the allowed shape once, as a DTO, and let a pipe enforce it before your handler runs.</p>
+        <div class="entries">
+          <article class="entry" data-k="dto class-validator validationpipe whitelist forbidnonwhitelisted transform">
+            <h3>DTO with class-validator</h3>
+            <div class="code"><pre><code>export class CreateTicketDto {
+  @IsString() @IsNotEmpty()
+  subject: string;
+
+  @IsIn(['low', 'medium', 'high'])
+  priority: 'low' | 'medium' | 'high';
+
+  @IsOptional() @IsString()
+  description?: string;
+}</code></pre></div>
+            <p class="small muted">Only properties with a decorator survive <code>whitelist</code>. An undecorated field is silently stripped.</p>
+          </article>
+
+          <article class="entry" data-k="validationpipe options whitelist forbidnonwhitelisted transform main.ts global">
+            <h3>Switch it on once</h3>
+            <div class="code"><pre><code>app.useGlobalPipes(new ValidationPipe({
+  whitelist: true,              // drop unknown properties
+  forbidNonWhitelisted: true,   // ...and answer 400 instead of ignoring
+  transform: true,              // "5" in query becomes 5, plain object becomes DTO
+}));</code></pre></div>
+            <p class="small">That is why <code>PATCH {"status":"closed"}</code> returns 400 in this project.</p>
+          </article>
+
+          <article class="entry" data-k="standard schema zod valibot arktype schema validation no classes">
+            <h3>Schema libraries (new)</h3>
+            <p class="small">Zod, Valibot, ArkType or any Standard Schema library works with no classes or decorators.</p>
+            <div class="code"><pre><code>const createTicketSchema = z.object({
+  subject: z.string().min(1),
+  priority: z.enum(['low', 'medium', 'high']),
+});
+
+@Post()
+create(@Body({ schema: createTicketSchema }) dto: z.infer&lt;typeof createTicketSchema&gt;) {}</code></pre></div>
+            <p class="small muted">Handled by <code>StandardSchemaValidationPipe</code>. Pick one style per project and do not mix them.</p>
+          </article>
+
+          <article class="entry" data-k="mapped types partialtype picktype omittype intersectiontype update dto">
+            <h3>Derive DTOs, do not copy them</h3>
+            <div class="code"><pre><code>// package: @nestjs/mapped-types
+export class UpdateTicketDto extends PartialType(CreateTicketDto) {}
+
+PickType(CreateTicketDto, ['subject'])
+OmitType(CreateTicketDto, ['priority'])</code></pre></div>
+            <p class="small muted">One rule, one home. Hand-writing the update DTO also works for three fields, as in this project.</p>
+          </article>
+
+          <article class="entry wide" data-k="built-in pipes parseintpipe parseuuidpipe parseboolpipe parsearraypipe parseenumpipe defaultvaluepipe parsefilepipe">
+            <h3>Built-in pipes</h3>
+            <div class="table-wrap"><table>
+              <thead><tr><th>Pipe</th><th>Does</th></tr></thead>
+              <tbody>
+                <tr><td><code>ParseIntPipe</code> <code>ParseFloatPipe</code></td><td class="wrap">String to number, otherwise 400.</td></tr>
+                <tr><td><code>ParseUUIDPipe</code></td><td class="wrap">Rejects ids that are not UUIDs (<code>new ParseUUIDPipe({ version: '4' })</code>).</td></tr>
+                <tr><td><code>ParseBoolPipe</code> <code>ParseEnumPipe</code> <code>ParseArrayPipe</code></td><td class="wrap">Booleans, enum members, comma lists.</td></tr>
+                <tr><td><code>DefaultValuePipe</code></td><td class="wrap"><code>@Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number</code></td></tr>
+                <tr><td><code>ParseFilePipe</code></td><td class="wrap">Checks upload size and type.</td></tr>
+                <tr><td><code>ValidationPipe</code></td><td class="wrap">Runs the DTO rules.</td></tr>
+              </tbody>
+            </table></div>
+          </article>
+        </div>
+      </section>
+
+      <!-- ============ EXCEPTIONS ============ -->
+      <section id="exceptions">
+        <header><h2>Exceptions and filters</h2><a class="docs-link" href="https://docs.nestjs.com/exception-filters" target="_blank" rel="noopener">docs: exception filters</a></header>
+        <div class="entries">
+          <article class="entry" data-k="http exceptions notfoundexception badrequestexception 404 400 401 403 409">
+            <h3>Throw, do not return errors</h3>
+            <div class="code"><pre><code>const ticket = this.tickets.find((t) =&gt; t.id === id);
+if (!ticket) throw new NotFoundException(`Ticket ${id} not found`);</code></pre></div>
+            <div class="table-wrap"><table>
+              <tbody>
+                <tr><td><code>BadRequestException</code></td><td>400</td></tr>
+                <tr><td><code>UnauthorizedException</code></td><td>401 (not logged in)</td></tr>
+                <tr><td><code>ForbiddenException</code></td><td>403 (logged in, not allowed)</td></tr>
+                <tr><td><code>NotFoundException</code></td><td>404</td></tr>
+                <tr><td><code>ConflictException</code></td><td>409 (duplicate)</td></tr>
+                <tr><td><code>UnprocessableEntityException</code></td><td>422</td></tr>
+                <tr><td><code>InternalServerErrorException</code></td><td>500</td></tr>
+              </tbody>
+            </table></div>
+          </article>
+
+          <article class="entry" data-k="exception filter catch app_filter global error shape">
+            <h3>One error shape for the API</h3>
+            <div class="code"><pre><code>@Catch()
+export class AllExceptionsFilter implements ExceptionFilter {
+  private readonly logger = new Logger(AllExceptionsFilter.name);
+
+  catch(exception: unknown, host: ArgumentsHost) {
+    const response = host.switchToHttp().getResponse();
+    const status =
+      exception instanceof HttpException ? exception.getStatus() : 500;
+
+    // Unknown errors are logged but never leaked to the client
+    if (status === 500) this.logger.error(exception);
+
+    response.status(status).json({
+      statusCode: status,
+      message: exception instanceof HttpException
+        ? exception.message
+        : 'Internal server error',
+    });
+  }
+}
+
+// register through DI so the filter can inject things
+providers: [{ provide: APP_FILTER, useClass: AllExceptionsFilter }]</code></pre></div>
+          </article>
+
+          <article class="entry wide" data-k="map database errors prisma domain error p2002 p2025">
+            <h3>Map database errors before they reach the client</h3>
+            <p class="small">Services should speak HTTP-friendly errors, not driver errors. Catch the known codes (for example Prisma's unique-constraint error) and rethrow a <code>ConflictException</code>. Let everything unknown fall through to the filter as a 500.</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- ============ GUARDS ============ -->
+      <section id="guards">
+        <header><h2>Guards and authentication</h2><a class="docs-link" href="https://docs.nestjs.com/guards" target="_blank" rel="noopener">docs: guards</a></header>
+        <div class="entries">
+          <article class="entry" data-k="guard canactivate reflector setmetadata roles public decorator">
+            <h3>Guard plus metadata</h3>
+            <p class="small">Tag routes with <code>SetMetadata</code>, read the tag in a guard with <code>Reflector</code>.</p>
+            <div class="code"><pre><code>export const Roles = (...roles: string[]) =&gt; SetMetadata('roles', roles);
+
+@Injectable()
+export class RolesGuard implements CanActivate {
+  constructor(private readonly reflector: Reflector) {}
+
+  canActivate(context: ExecutionContext): boolean {
+    const roles = this.reflector.getAllAndOverride&lt;string[]&gt;('roles', [
+      context.getHandler(),   // method decorator wins over class decorator
+      context.getClass(),
+    ]);
+    if (!roles) return true;
+    const { user } = context.switchToHttp().getRequest();
+    return roles.includes(user?.role);
+  }
+}
+
+@Roles('admin')
+@Delete(':id')
+remove() {}</code></pre></div>
+          </article>
+
+          <article class="entry" data-k="app_guard global guard authentication jwt public route opt out">
+            <h3>Protect everything, opt out per route</h3>
+            <div class="code"><pre><code>providers: [{ provide: APP_GUARD, useClass: AuthGuard }]
+
+// then mark open routes
+export const Public = () =&gt; SetMetadata('isPublic', true);</code></pre></div>
+            <p class="small">Safer than remembering to add <code>@UseGuards()</code> on every new route.</p>
+          </article>
+
+          <article class="entry wide" data-k="auth authentication authorization jwt passport hashing argon2 bcrypt helmet cors csrf throttler rate limit">
+            <h3>Security checklist and the built-in help</h3>
+            <ul class="small">
+              <li><b>Sign-in:</b> <code>@nestjs/authentication</code>. Passport recipe still works if you prefer it.</li>
+              <li><b>Permissions:</b> <code>@nestjs/authorization</code> or your own role guard.</li>
+              <li><b>Passwords:</b> hash with argon2 or bcrypt. Never store or log the plain value.</li>
+              <li><b>Rate limiting:</b> <code>@nestjs/throttler</code> on login and public POST routes.</li>
+              <li><b>Headers and CORS:</b> <code>helmet</code>, and <code>app.enableCors({ origin: [...] })</code> with an explicit list.</li>
+              <li><b>Secrets:</b> only from environment variables, never committed.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- ============ INTERCEPTORS ============ -->
+      <section id="interceptors">
+        <header><h2>Interceptors</h2><a class="docs-link" href="https://docs.nestjs.com/interceptors" target="_blank" rel="noopener">docs: interceptors</a></header>
+        <div class="entries">
+          <article class="entry" data-k="interceptor timing logging tap map rxjs nestinterceptor calhandler">
+            <h3>Wrap the handler</h3>
+            <div class="code"><pre><code>@Injectable()
+export class TimingInterceptor implements NestInterceptor {
+  private readonly logger = new Logger('HTTP');
+
+  intercept(context: ExecutionContext, next: CallHandler) {
+    const started = Date.now();
+    return next.handle().pipe(
+      tap(() =&gt; this.logger.log(`done in ${Date.now() - started}ms`)),
+    );
+  }
+}</code></pre></div>
+            <p class="small">Code before <code>next.handle()</code> runs before the handler. Operators in <code>pipe()</code> run after it.</p>
+          </article>
+
+          <article class="entry" data-k="interceptor use cases cache timeout transform response envelope classserializerinterceptor">
+            <h3>Good uses</h3>
+            <ul class="small">
+              <li>Request timing and structured logging.</li>
+              <li>Response envelope: <code>map((data) =&gt; ({ data }))</code>.</li>
+              <li>Timeouts: <code>timeout(5000)</code> from rxjs.</li>
+              <li>Caching: use <code>CacheInterceptor</code> from <code>@nestjs/cache-manager</code>.</li>
+              <li>Hiding fields: <code>ClassSerializerInterceptor</code>.</li>
+            </ul>
+            <p class="small muted">Register globally with <code>APP_INTERCEPTOR</code>, or per controller with <code>@UseInterceptors()</code>.</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- ============ DECORATORS ============ -->
+      <section id="decorators">
+        <header><h2>Custom decorators</h2><a class="docs-link" href="https://docs.nestjs.com/custom-decorators" target="_blank" rel="noopener">docs: custom decorators</a></header>
+        <div class="entries">
+          <article class="entry" data-k="custom param decorator createparamdecorator current user">
+            <h3>Param decorator</h3>
+            <div class="code"><pre><code>export const CurrentUser = createParamDecorator(
+  (_data: unknown, context: ExecutionContext) =&gt;
+    context.switchToHttp().getRequest().user,
+);
+
+@Get('me')
+me(@CurrentUser() user: AuthUser) {
+  return user;
+}</code></pre></div>
+          </article>
+          <article class="entry" data-k="compose decorators applydecorators">
+            <h3>Compose decorators</h3>
+            <div class="code"><pre><code>export const AdminOnly = () =&gt;
+  applyDecorators(Roles('admin'), UseGuards(RolesGuard));</code></pre></div>
+            <p class="small muted">Fewer lines on every controller, and the combination lives in one place.</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- ============ CONFIG ============ -->
+      <section id="config">
+        <header><h2>Configuration</h2><a class="docs-link" href="https://docs.nestjs.com/application/configuration" target="_blank" rel="noopener">docs: configuration</a></header>
+        <div class="entries">
+          <article class="entry" data-k="config configservice env dotenv validate environment variables nestjs/config">
+            <h3>@nestjs/config</h3>
+            <div class="code"><pre><code>ConfigModule.forRoot({
+  isGlobal: true,
+  validate: validateEnv,   // fail at startup, not at 3am
+})
+
+constructor(private readonly config: ConfigService) {}
+const port = this.config.get('PORT', 3000);</code></pre></div>
+            <ul class="small">
+              <li>Validate env once at boot with a schema. A missing <code>DATABASE_URL</code> should stop the app immediately.</li>
+              <li>Read config through <code>ConfigService</code>, never scattered <code>process.env</code> calls.</li>
+              <li>Commit a <code>.env.example</code>. Never commit <code>.env</code>.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- ============ DATA ============ -->
+      <section id="data">
+        <header><h2>Data and serialization</h2><a class="docs-link" href="https://docs.nestjs.com/data/overview" target="_blank" rel="noopener">docs: data</a></header>
+        <div class="entries">
+          <article class="entry" data-k="database orm typeorm prisma drizzle mongoose mikroorm sequelize">
+            <h3>Which data layer</h3>
+            <div class="table-wrap"><table>
+              <tbody>
+                <tr><td>Prisma</td><td class="wrap">Schema-first, strong types, great with PostgreSQL.</td></tr>
+                <tr><td>Drizzle</td><td class="wrap">SQL-like, light, <code>@nestjs/drizzle</code>.</td></tr>
+                <tr><td>TypeORM</td><td class="wrap">Decorator entities, <code>@nestjs/typeorm</code>.</td></tr>
+                <tr><td>Mongoose</td><td class="wrap">MongoDB, <code>@nestjs/mongoose</code>.</td></tr>
+                <tr><td>MikroORM, Sequelize</td><td class="wrap">Also supported.</td></tr>
+              </tbody>
+            </table></div>
+          </article>
+
+          <article class="entry" data-k="service repository layering separation of concerns database access">
+            <h3>Layering</h3>
+            <div class="code"><pre><code>Controller   HTTP in/out, DTOs
+   |
+Service      business rules, transactions
+   |
+Repository   the only place that touches the DB
+   |
+Database</code></pre></div>
+            <p class="small muted">Start with the service talking to the data client directly. Add a repository class when queries get big or you want to swap storage in tests.</p>
+          </article>
+
+          <article class="entry" data-k="serialization exclude classserializerinterceptor response dto password never return entity">
+            <h3>Never return raw entities</h3>
+            <p class="small">A database row often has fields the client must not see (password hash, internal flags). Return a response shape on purpose.</p>
+            <div class="code"><pre><code>// option 1: explicit mapping (clearest)
+return { id: user.id, email: user.email };
+
+// option 2: hide fields on the class
+class UserEntity {
+  @Exclude() passwordHash: string;
+}
+// plus ClassSerializerInterceptor</code></pre></div>
+          </article>
+
+          <article class="entry" data-k="pagination transaction index list performance n+1">
+            <h3>Habits that save you later</h3>
+            <ul class="small">
+              <li>Paginate every list endpoint from day one (<code>page</code> and <code>limit</code> with caps).</li>
+              <li>Use a transaction for any multi-step write.</li>
+              <li>Index foreign keys and the fields you filter on.</li>
+              <li>Watch for N+1: loading a relation inside a loop.</li>
+              <li>Database id types and DTO types are separate things. Do not reuse one for the other.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- ============ LOGGING ============ -->
+      <section id="logging">
+        <header><h2>Logging</h2><a class="docs-link" href="https://docs.nestjs.com/application/logger" target="_blank" rel="noopener">docs: logger</a></header>
+        <div class="entries">
+          <article class="entry" data-k="logger log warn error debug console.log structured pino">
+            <h3>Built-in Logger</h3>
+            <div class="code"><pre><code>private readonly logger = new Logger(TicketsService.name);
+
+this.logger.log(`ticket ${ticket.id} created`);
+this.logger.warn(`retry ${attempt} for ${job.id}`);
+this.logger.error('payment failed', error.stack);
+this.logger.debug(`filters: ${JSON.stringify(filters)}`);</code></pre></div>
+            <p class="small">The class name becomes the context in each line. Swap in <code>pino</code> later through <code>app.useLogger()</code> when you need JSON logs. Skip <code>console.log</code> in app code.</p>
+          </article>
+          <article class="entry" data-k="observe observability tracing errors metrics opentelemetry health terminus">
+            <h3>Production visibility</h3>
+            <ul class="small">
+              <li><b>NestJS Observe</b> (<code>ObserveModule</code>, already wired here): traces, errors, logs, metrics.</li>
+              <li><b>Health checks:</b> <code>@nestjs/terminus</code> gives <code>/health</code> for your deploy platform.</li>
+              <li><b>OpenTelemetry</b> if you prefer a vendor-neutral setup.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- ============ TESTING ============ -->
+      <section id="testing">
+        <header><h2>Testing</h2><a class="docs-link" href="https://docs.nestjs.com/fundamentals/testing" target="_blank" rel="noopener">docs: testing</a></header>
+        <div class="entries">
+          <article class="entry" data-k="unit test vitest testing module createtestingmodule vi.fn mock provider">
+            <h3>Unit test a service</h3>
+            <div class="code"><pre><code>const moduleRef = await Test.createTestingModule({
+  providers: [
+    TicketsService,
+    { provide: MailerService, useValue: { send: vi.fn() } },  // vi.fn, not jest.fn
+  ],
+}).compile();
+
+const service = moduleRef.get(TicketsService);
+
+it('throws 404 for an unknown id', () =&gt; {
+  expect(() =&gt; service.findOne(999)).toThrow(NotFoundException);
+});</code></pre></div>
+          </article>
+
+          <article class="entry" data-k="e2e test supertest createnestapplication global pipes prefix">
+            <h3>End-to-end test</h3>
+            <div class="code"><pre><code>const app = moduleRef.createNestApplication();
+app.setGlobalPrefix('api');          // same setup as main.ts
+app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }));
+await app.init();
+
+await request(app.getHttpServer())
+  .patch('/api/tickets/1')
+  .send({ status: 'closed' })
+  .expect(400);</code></pre></div>
+            <p class="small"><b>Common trap:</b> an e2e app without the prefix and pipes from <code>main.ts</code> behaves differently from the real one. Move that setup into one <code>configureApp(app)</code> function and call it from both.</p>
+          </article>
+
+          <article class="entry wide" data-k="what to test strategy">
+            <h3>What to cover</h3>
+            <ul class="small">
+              <li><b>Services:</b> unit tests with mocked dependencies. This is where the rules live.</li>
+              <li><b>Routes:</b> a few e2e tests per feature: happy path, validation failure (400), missing resource (404), no permission (401 or 403).</li>
+              <li><b>Guards, pipes, filters:</b> small unit tests when they contain logic of their own.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- ============ PACKAGES ============ -->
+      <section id="packages">
+        <header><h2>Built-in packages</h2><a class="docs-link" href="https://docs.nestjs.com/llms.txt" target="_blank" rel="noopener">docs index (llms.txt)</a></header>
+        <p class="lead">Check this list before adding a third-party library or writing your own. Nest maintains these.</p>
+        <div class="table-wrap" data-k="packages list first party throttler config cache terminus schedule bullmq event-emitter swagger graphql websockets microservices mail storage i18n resilience idempotency outbox webhooks locks workflows ai mcp">
+          <table>
+            <thead><tr><th>Need</th><th>Package</th></tr></thead>
+            <tbody>
+              <tr><td>Environment config</td><td><code>@nestjs/config</code></td></tr>
+              <tr><td>API docs (Swagger)</td><td><code>@nestjs/swagger</code></td></tr>
+              <tr><td>Rate limiting</td><td><code>@nestjs/throttler</code></td></tr>
+              <tr><td>Caching</td><td><code>@nestjs/cache-manager</code></td></tr>
+              <tr><td>Health checks</td><td><code>@nestjs/terminus</code></td></tr>
+              <tr><td>In-app events</td><td><code>@nestjs/event-emitter</code></td></tr>
+              <tr><td>Background jobs</td><td><code>@nestjs/bullmq</code> (Redis)</td></tr>
+              <tr><td>Scheduled jobs (cron)</td><td><code>@nestjs/schedule</code></td></tr>
+              <tr><td>Run a job on one instance, locks</td><td><code>@nestjs/locks</code></td></tr>
+              <tr><td>Sign-in / permissions</td><td><code>@nestjs/authentication</code>, <code>@nestjs/authorization</code></td></tr>
+              <tr><td>Database</td><td><code>@nestjs/typeorm</code>, <code>@nestjs/drizzle</code>, <code>@nestjs/mongoose</code>, <code>@nestjs/sequelize</code></td></tr>
+              <tr><td>Email</td><td><code>@nestjs/mail</code></td></tr>
+              <tr><td>Files and S3</td><td><code>@nestjs/storage</code></td></tr>
+              <tr><td>Translations</td><td><code>@nestjs/i18n</code></td></tr>
+              <tr><td>Retries, timeouts, circuit breakers</td><td><code>@nestjs/resilience</code></td></tr>
+              <tr><td>Idempotency keys</td><td><code>@nestjs/idempotency</code></td></tr>
+              <tr><td>Transactional outbox</td><td><code>@nestjs/outbox</code></td></tr>
+              <tr><td>Send/receive webhooks</td><td><code>@nestjs/webhooks</code></td></tr>
+              <tr><td>Multi-day processes</td><td><code>@nestjs/workflows</code></td></tr>
+              <tr><td>GraphQL, WebSockets, microservices</td><td><code>@nestjs/graphql</code>, <code>@nestjs/websockets</code>, <code>@nestjs/microservices</code></td></tr>
+              <tr><td>Language models, agents, MCP servers</td><td><code>@nestjs/ai</code>, <code>@nestjs/mcp</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ BEYOND ============ -->
+      <section id="beyond">
+        <header><h2>Beyond REST</h2><a class="docs-link" href="https://docs.nestjs.com/microservices/basics" target="_blank" rel="noopener">docs: microservices</a></header>
+        <p class="lead">Nest is not only for JSON APIs. The same modules, providers, guards and pipes work across transports.</p>
+        <div class="entries">
+          <article class="entry" data-k="websockets gateway realtime socket">
+            <h3>WebSockets</h3>
+            <p class="small">A <code>@WebSocketGateway()</code> class with <code>@SubscribeMessage('event')</code> handlers. Guards, pipes and filters apply to messages too. Use it for live ticket updates or chat.</p>
+          </article>
+          <article class="entry" data-k="sse server-sent events streaming">
+            <h3>Server-Sent Events</h3>
+            <p class="small"><code>@Sse('stream')</code> returning an rxjs <code>Observable</code>. One-way push is simpler than WebSockets for notifications.</p>
+          </article>
+          <article class="entry" data-k="microservices redis nats kafka rabbitmq mqtt grpc message pattern event pattern">
+            <h3>Microservices</h3>
+            <p class="small">Redis, NATS, MQTT, RabbitMQ, Kafka, gRPC. Handlers use <code>@MessagePattern()</code> (request/response) and <code>@EventPattern()</code> (fire and forget). Only split services when you have a reason; a modular monolith comes first.</p>
+          </article>
+          <article class="entry" data-k="queues bullmq redis background jobs processor">
+            <h3>Queues</h3>
+            <p class="small">Slow or retryable work (email, reports) goes to a BullMQ queue and a <code>@Processor()</code> class. The request returns fast and the job runs in the background.</p>
+          </article>
+          <article class="entry" data-k="cron schedule task scheduling">
+            <h3>Scheduled tasks</h3>
+            <p class="small"><code>@Cron('0 * * * *')</code> from <code>@nestjs/schedule</code>. With several instances, guard it with <code>@nestjs/locks</code> so it runs once.</p>
+          </article>
+          <article class="entry" data-k="graphql swagger openapi cqrs standalone application hybrid">
+            <h3>Also in the box</h3>
+            <p class="small">GraphQL (code-first or schema-first), OpenAPI/Swagger docs with the CLI plugin, CQRS recipe, standalone apps (scripts and CLIs using DI without HTTP), hybrid apps (HTTP plus a microservice transport).</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- ============ CLI ============ -->
+      <section id="cli">
+        <header><h2>CLI and ESM notes</h2><a class="docs-link" href="https://docs.nestjs.com/cli/overview" target="_blank" rel="noopener">docs: CLI</a></header>
+        <div class="entries">
+          <article class="entry" data-k="cli nest generate g resource module controller service guard pipe interceptor filter decorator">
+            <h3>Generate, do not hand-type</h3>
+            <div class="code"><pre><code>nest g resource tickets      # module + controller + service + DTOs (CRUD)
+nest g module tickets
+nest g controller tickets
+nest g service tickets
+nest g guard auth
+nest g pipe parse-thing
+nest g interceptor timing
+nest g filter all-exceptions
+nest g decorator current-user</code></pre></div>
+            <p class="small muted">It wires the new class into the right module for you. Use <code>--dry-run</code> to preview.</p>
+          </article>
+
+          <article class="entry" data-k="esm import .js dirname vitest module commonjs node">
+            <h3>This project is ESM</h3>
+            <ul class="small">
+              <li>Relative imports end in <code>.js</code> even though you write <code>.ts</code>: <code>import { TicketsService } from './tickets.service.js'</code>.</li>
+              <li><code>__dirname</code> does not exist. Use <code>import.meta.dirname</code>.</li>
+              <li>Top-level <code>await</code> works (see <code>main.ts</code>).</li>
+              <li>Tests use Vitest: <code>vi.fn()</code>, <code>vi.spyOn()</code>, not <code>jest</code>.</li>
+            </ul>
+          </article>
+
+          <article class="entry" data-k="folder structure feature project layout">
+            <h3>Folder layout</h3>
+            <div class="code"><pre><code>src/
+  main.ts
+  app.module.ts
+  tickets/
+    tickets.module.ts
+    tickets.controller.ts
+    tickets.service.ts
+    ticket.interface.ts
+    dto/
+      create-ticket-dto.ts
+      update-ticket-dto.ts
+  common/            # shared guards, filters, decorators
+  config/            # env validation</code></pre></div>
+            <p class="small muted">Group by feature, not by type. Everything for tickets lives in <code>tickets/</code>.</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- ============ PRACTICES ============ -->
+      <section id="practices">
+        <header><h2>Good practice</h2></header>
+        <div class="entry wide" data-k="best practices do avoid good habits">
+          <ul class="rules">
+            <li><span class="tag do">Do</span><span>One module per feature. Keep controllers thin and services free of HTTP types.</span></li>
+            <li><span class="tag do">Do</span><span>Give every input a DTO or schema, and turn on <code>whitelist</code> and <code>forbidNonWhitelisted</code>.</span></li>
+            <li><span class="tag do">Do</span><span>Register global guards, pipes, filters and interceptors with <code>APP_*</code> providers so they can use DI.</span></li>
+            <li><span class="tag do">Do</span><span>Throw built-in HTTP exceptions from services and format them in one filter.</span></li>
+            <li><span class="tag do">Do</span><span>Validate env at startup and read it through <code>ConfigService</code>.</span></li>
+            <li><span class="tag do">Do</span><span>Enable shutdown hooks and add a health endpoint before the first deploy.</span></li>
+            <li><span class="tag do">Do</span><span>Write unit tests for service rules and e2e tests for validation and auth failures.</span></li>
+            <li><span class="tag avoid">Avoid</span><span><code>new SomeService()</code> anywhere. Inject it.</span></li>
+            <li><span class="tag avoid">Avoid</span><span>Business logic in controllers, or <code>@Req()</code>/<code>@Res()</code> unless you must stream.</span></li>
+            <li><span class="tag avoid">Avoid</span><span>Returning database entities straight to the client.</span></li>
+            <li><span class="tag avoid">Avoid</span><span><code>@Global()</code> and <code>forwardRef</code> as shortcuts. They hide design problems.</span></li>
+            <li><span class="tag avoid">Avoid</span><span>Request-scoped providers by default. They slow every dependent class.</span></li>
+            <li><span class="tag avoid">Avoid</span><span>Unpaginated list endpoints and <code>console.log</code> in app code.</span></li>
+            <li><span class="tag avoid">Avoid</span><span>Adding a library before checking the first-party package list above.</span></li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ============ ERRORS ============ -->
+      <section id="errors">
+        <header><h2>Common errors</h2><a class="docs-link" href="https://docs.nestjs.com/faq/common-errors" target="_blank" rel="noopener">docs: common errors</a></header>
+        <div class="table-wrap" data-k="errors troubleshooting can't resolve dependencies cannot get 404 validation not working undefined body circular">
+          <table>
+            <thead><tr><th>Symptom</th><th>Usual cause and fix</th></tr></thead>
+            <tbody>
+              <tr><td class="wrap"><code>Nest can't resolve dependencies of X (?)</code></td><td class="wrap">The missing provider is not in this module's <code>providers</code>, or lives in another module that has not exported it and this one has not imported it. The <code>?</code> marks which constructor argument is missing.</td></tr>
+              <tr><td class="wrap"><code>Cannot GET /tickets</code></td><td class="wrap">Forgot the global prefix. The real path is <code>/api/tickets</code>.</td></tr>
+              <tr><td class="wrap">Validation does nothing</td><td class="wrap"><code>ValidationPipe</code> is not registered, or the e2e test app was built without it.</td></tr>
+              <tr><td class="wrap">Body arrives as <code>{}</code></td><td class="wrap">With <code>whitelist</code>, DTO properties that have no validator decorator get stripped. Add a decorator to every field.</td></tr>
+              <tr><td class="wrap"><code>:id</code> route eats <code>/stats</code></td><td class="wrap">Declare the static route first.</td></tr>
+              <tr><td class="wrap">Query number is a string</td><td class="wrap">Add <code>transform: true</code> to the pipe, or a <code>Parse*Pipe</code>.</td></tr>
+              <tr><td class="wrap">Dependency is <code>undefined</code> at runtime</td><td class="wrap">Class is missing <code>@Injectable()</code>, or you built it with <code>new</code>.</td></tr>
+              <tr><td class="wrap">Circular dependency warning</td><td class="wrap">Extract the shared logic into a third provider before reaching for <code>forwardRef</code>.</td></tr>
+              <tr><td class="wrap"><code>Cannot find module './x'</code> (ESM)</td><td class="wrap">Relative import missing the <code>.js</code> extension.</td></tr>
+              <tr><td class="wrap">Interceptor or filter skipped</td><td class="wrap">The handler uses <code>@Res()</code>. Return the value instead.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <p class="empty" id="empty">Nothing matches that filter. Try a shorter word.</p>
+    </main>
+  </div>
+</div>
+
+<script>
+  // Colour code with one pass so comments, strings and decorators never nest.
+  document.querySelectorAll('pre code').forEach(function (block) {
+    var text = block.textContent.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    block.innerHTML = text.replace(/(\/\/.*$)|('[^'\n]*')|(@[A-Za-z]+)/gm, function (m, comment, str, deco) {
+      if (comment) return '<span class="c">' + m + '</span>';
+      if (str) return '<span class="s">' + m + '</span>';
+      return '<span class="d">' + m + '</span>';
+    });
+  });
+
+  // Copy buttons. Clipboard can be refused in some viewers, so fall back to selecting the text.
+  document.querySelectorAll('.code').forEach(function (wrap) {
+    var button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'copy';
+    button.textContent = 'Copy';
+    button.addEventListener('click', function () {
+      var code = wrap.querySelector('code');
+      function done(label) { button.textContent = label; setTimeout(function () { button.textContent = 'Copy'; }, 1400); }
+      function select() {
+        var range = document.createRange();
+        range.selectNodeContents(code);
+        var selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        done('Selected');
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code.textContent).then(function () { done('Copied'); }, select);
+      } else { select(); }
+    });
+    wrap.appendChild(button);
+  });
+
+  // Filter: hide entries that do not contain the typed words, and sections left empty.
+  var search = document.getElementById('search');
+  var empty = document.getElementById('empty');
+  var sections = Array.prototype.slice.call(document.querySelectorAll('main > section'));
+
+  function applyFilter() {
+    var words = search.value.toLowerCase().split(/\s+/).filter(Boolean);
+    var anyVisible = false;
+    sections.forEach(function (section) {
+      var items = section.querySelectorAll('[data-k]');
+      var shown = 0;
+      items.forEach(function (item) {
+        var haystack = (item.getAttribute('data-k') + ' ' + item.textContent).toLowerCase();
+        var match = words.every(function (word) { return haystack.indexOf(word) !== -1; });
+        item.hidden = !match;
+        if (match) shown++;
+      });
+      var visible = words.length === 0 || shown > 0;
+      section.hidden = !visible;
+      if (visible) anyVisible = true;
+    });
+    empty.classList.toggle('show', !anyVisible);
+  }
+  search.addEventListener('input', applyFilter);
+</script>

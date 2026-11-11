@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NestJS Quick Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: dense multi-column sheet that prints on two A4 pages.
+     Same tokens as the full cheatsheet so the two read as one set. */
+  :root {
+    --bg: #f3f4f7; --surface: #ffffff; --ink: #14181f; --muted: #596273; --line: #dde1e8;
+    --accent: #d11a46; --accent-soft: #fde9ef; --code-bg: #eceff4; --code-ink: #1b2330;
+    --code-comment: #6a7587; --code-string: #0b7a53;
+    --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+    --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    --font-code: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0d1015; --surface: #151a21; --ink: #e6e9ee; --muted: #9aa3b0; --line: #262d38;
+      --accent: #ff6285; --accent-soft: #3a1823; --code-bg: #0a0d11; --code-ink: #d9dee6;
+      --code-comment: #7d8797; --code-string: #5fd3a1; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1015; --surface: #151a21; --ink: #e6e9ee; --muted: #9aa3b0; --line: #262d38;
+    --accent: #ff6285; --accent-soft: #3a1823; --code-bg: #0a0d11; --code-ink: #d9dee6;
+    --code-comment: #7d8797; --code-string: #5fd3a1; color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink); font: 400 14px/1.5 var(--font-body);
+    padding-block: 1.25rem 3rem;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  a { color: var(--accent); text-underline-offset: 3px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .page { max-width: 84rem; margin: 0 auto; }
+  header.top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.5rem 1.5rem; border-bottom: 2px solid var(--ink); padding-bottom: 0.5rem; margin-bottom: 1rem; }
+  h1 { font: 700 1.9rem/1 var(--font-display); margin: 0; letter-spacing: -0.02em; }
+  h1 span { color: var(--accent); }
+  .meta { font-size: 0.8rem; color: var(--muted); }
+
+  .sheet { columns: 3 20rem; column-gap: 1rem; }
+  .box { break-inside: avoid; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 0.7rem 0.8rem; margin: 0 0 1rem; }
+  .box h2 { font: 700 0.95rem/1.2 var(--font-display); margin: 0 0 0.4rem; color: var(--accent); }
+  .box p { margin: 0 0 0.4rem; font-size: 0.82rem; }
+  .box ul { margin: 0; padding-left: 1.1rem; font-size: 0.82rem; }
+  .box li { margin-bottom: 0.15rem; }
+  .muted { color: var(--muted); }
+
+  code { font: 500 0.85em var(--font-code); background: var(--code-bg); padding: 0.05em 0.3em; border-radius: 3px; }
+  pre { margin: 0 0 0.4rem; background: var(--code-bg); color: var(--code-ink); border-radius: 5px; padding: 0.5rem 0.65rem; overflow-x: auto; font: 400 0.74rem/1.5 var(--font-code); }
+  pre:last-child { margin-bottom: 0; }
+  pre code { background: none; padding: 0; font: inherit; }
+  .c { color: var(--code-comment); } .s { color: var(--code-string); } .d { color: var(--accent); }
+
+  .order { display: flex; flex-wrap: wrap; gap: 0.25rem; align-items: center; font: 600 0.78rem var(--font-display); }
+  .order i { font-style: normal; color: var(--muted); }
+  .order b { background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 4px; padding: 0.1rem 0.4rem; font-weight: 600; }
+  .order b.plain { background: var(--surface); border-color: var(--line); }
+
+  table { border-collapse: collapse; width: 100%; font-size: 0.8rem; }
+  td { padding: 0.18rem 0.3rem 0.18rem 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  td:first-child { white-space: nowrap; font-weight: 500; padding-right: 0.6rem; }
+  .table-scroll { overflow-x: auto; }
+
+  footer { margin-top: 0.5rem; font-size: 0.8rem; color: var(--muted); }
+
+  /* Print: two A4 pages, no chrome. Colours stay so the red labels still print. */
+  @media print {
+    @page { size: A4; margin: 9mm; }
+    :root, :root[data-theme="dark"] {
+      --bg: #fff; --surface: #fff; --ink: #000; --muted: #444; --line: #bbb;
+      --accent: #b3123a; --accent-soft: #fff; --code-bg: #f1f1f1; --code-ink: #000;
+      --code-comment: #555; --code-string: #0b6a47; color-scheme: light;
+    }
+    body { font-size: 9.5px; padding: 0; }
+    .noprint { display: none; }
+    .sheet { columns: 3; column-gap: 8px; }
+    .box { margin-bottom: 7px; padding: 5px 6px; }
+    pre { font-size: 7.6px; padding: 4px 5px; white-space: pre-wrap; }
+    h1 { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="top">
+    <h1>Nest<span>JS</span> quick sheet</h1>
+    <div class="meta">ESM, Vitest, current Nest. Prints on 2 pages. <a class="noprint" href="nestjs-cheatsheet.html">Full cheatsheet &rarr;</a></div>
+  </header>
+
+  <div class="sheet">
+
+    <section class="box">
+      <h2>Request order</h2>
+      <div class="order"><b class="plain">Middleware</b><i>&rarr;</i><b>Guard</b><i>&rarr;</i><b>Interceptor</b><i>&rarr;</i><b>Pipe</b><i>&rarr;</i><b class="plain">Handler</b><i>&rarr;</i><b>Interceptor</b><i>&rarr;</i><b class="plain">Response</b></div>
+      <p style="margin-top:0.4rem" class="muted">Any throw jumps to the <b>Exception filter</b>.</p>
+    </section>
+
+    <section class="box">
+      <h2>Which tool?</h2>
+      <div class="table-scroll"><table>
+        <tr><td>Every request</td><td>Middleware</td></tr>
+        <tr><td>Allow / block</td><td>Guard</td></tr>
+        <tr><td>Check / convert input</td><td>Pipe</td></tr>
+        <tr><td>Wrap handler</td><td>Interceptor</td></tr>
+        <tr><td>Errors to responses</td><td>Exception filter</td></tr>
+        <tr><td>Current user param</td><td>Param decorator</td></tr>
+        <tr><td>Shared logic</td><td>Provider (service)</td></tr>
+      </table></div>
+    </section>
+
+    <section class="box">
+      <h2>Feature skeleton</h2>
+<pre><code>@Module({
+  controllers: [TicketsController],
+  providers: [TicketsService],
+  exports: [TicketsService],
+})
+export class TicketsModule {}
+
+@Controller('tickets')
+export class TicketsController {
+  constructor(private readonly tickets: TicketsService) {}
+
+  @Patch(':id')
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateTicketDto,
+  ) { return this.tickets.update(id, dto); }
+}
+
+@Injectable()
+export class TicketsService {}</code></pre>
+    </section>
+
+    <section class="box">
+      <h2>Handler decorators</h2>
+      <ul>
+        <li><code>@Get @Post @Patch @Put @Delete</code></li>
+        <li><code>@Param('id')</code> always a string, parse it</li>
+        <li><code>@Query()</code> <code>@Body()</code> <code>@Headers('x')</code></li>
+        <li><code>@HttpCode(204)</code> <code>@Header(k, v)</code></li>
+        <li>Skip <code>@Req @Res</code>: they disable interceptors</li>
+        <li>Static routes before <code>:id</code> routes</li>
+      </ul>
+    </section>
+
+    <section class="box">
+      <h2>Dependency injection</h2>
+<pre><code>providers: [
+  { provide: 'FROM', useValue: 'a@b.dev' },
+  { provide: Mailer, useClass: SmtpMailer },
+  { provide: 'DB', inject: [ConfigService],
+    useFactory: (c: ConfigService) =&gt; connect(c.get('DB_URL')) },
+]
+constructor(@Inject('FROM') from: string) {}</code></pre>
+      <p class="muted">Default scope = one shared instance. Request scope is slow; avoid.</p>
+    </section>
+
+    <section class="box">
+      <h2>Validation</h2>
+<pre><code>app.useGlobalPipes(new ValidationPipe({
+  whitelist: true,
+  forbidNonWhitelisted: true,  // unknown field = 400
+  transform: true,
+}));
+
+class CreateTicketDto {
+  @IsString() @IsNotEmpty() subject: string;
+  @IsIn(['low','medium','high']) priority: string;
+  @IsOptional() @IsString() description?: string;
+}</code></pre>
+      <p class="muted">Undecorated fields get stripped. Or use Zod: <code>@Body({ schema })</code>.</p>
+      <p><code>ParseIntPipe ParseUUIDPipe ParseBoolPipe ParseEnumPipe DefaultValuePipe</code></p>
+    </section>
+
+    <section class="box">
+      <h2>Exceptions</h2>
+      <div class="table-scroll"><table>
+        <tr><td><code>BadRequest</code></td><td>400</td></tr>
+        <tr><td><code>Unauthorized</code></td><td>401</td></tr>
+        <tr><td><code>Forbidden</code></td><td>403</td></tr>
+        <tr><td><code>NotFound</code></td><td>404</td></tr>
+        <tr><td><code>Conflict</code></td><td>409</td></tr>
+        <tr><td><code>InternalServerError</code></td><td>500</td></tr>
+      </table></div>
+      <p style="margin-top:0.3rem" class="muted"><code>throw new NotFoundException('msg')</code>. Add <code>Exception</code> to each name.</p>
+    </section>
+
+    <section class="box">
+      <h2>Guard + metadata</h2>
+<pre><code>export const Roles = (...r: string[]) =&gt; SetMetadata('roles', r);
+
+canActivate(ctx: ExecutionContext) {
+  const roles = this.reflector.getAllAndOverride('roles',
+    [ctx.getHandler(), ctx.getClass()]);
+  if (!roles) return true;
+  return roles.includes(
+    ctx.switchToHttp().getRequest().user?.role);
+}</code></pre>
+    </section>
+
+    <section class="box">
+      <h2>Global, with DI</h2>
+<pre><code>providers: [
+  { provide: APP_GUARD, useClass: AuthGuard },
+  { provide: APP_PIPE, useClass: ValidationPipe },
+  { provide: APP_FILTER, useClass: AllExceptionsFilter },
+  { provide: APP_INTERCEPTOR, useClass: TimingInterceptor },
+]</code></pre>
+      <p class="muted">Prefer these over <code>useGlobal*</code> in main.ts.</p>
+    </section>
+
+    <section class="box">
+      <h2>Interceptor / decorator</h2>
+<pre><code>intercept(ctx: ExecutionContext, next: CallHandler) {
+  const t = Date.now();
+  return next.handle().pipe(
+    tap(() =&gt; this.logger.log(`${Date.now() - t}ms`)));
+}
+
+export const CurrentUser = createParamDecorator(
+  (_: unknown, ctx: ExecutionContext) =&gt;
+    ctx.switchToHttp().getRequest().user);</code></pre>
+    </section>
+
+    <section class="box">
+      <h2>Config and logging</h2>
+<pre><code>ConfigModule.forRoot({ isGlobal: true, validate })
+this.config.get('PORT', 3000)
+
+private readonly logger = new Logger(TicketsService.name);
+this.logger.log('created');  .warn()  .error()  .debug()</code></pre>
+      <p class="muted">Validate env at boot. No <code>console.log</code>. Never commit <code>.env</code>.</p>
+    </section>
+
+    <section class="box">
+      <h2>Testing (Vitest)</h2>
+<pre><code>const mod = await Test.createTestingModule({
+  providers: [TicketsService,
+    { provide: Mailer, useValue: { send: vi.fn() } }],
+}).compile();
+const service = mod.get(TicketsService);
+
+// e2e: use the SAME prefix + pipes as main.ts
+await request(app.getHttpServer())
+  .patch('/api/tickets/1').send({ status: 'x' }).expect(400);</code></pre>
+    </section>
+
+    <section class="box">
+      <h2>CLI</h2>
+<pre><code>nest g resource tickets
+nest g module|controller|service x
+nest g guard|pipe|interceptor|filter x
+nest g decorator current-user
+# add --dry-run to preview</code></pre>
+    </section>
+
+    <section class="box">
+      <h2>First-party packages</h2>
+      <ul>
+        <li>config <code>@nestjs/config</code></li>
+        <li>docs <code>@nestjs/swagger</code></li>
+        <li>rate limit <code>@nestjs/throttler</code></li>
+        <li>cache <code>@nestjs/cache-manager</code></li>
+        <li>health <code>@nestjs/terminus</code></li>
+        <li>jobs <code>@nestjs/bullmq</code> <code>@nestjs/schedule</code></li>
+        <li>events <code>@nestjs/event-emitter</code></li>
+        <li>auth <code>@nestjs/authentication</code></li>
+        <li>db <code>typeorm drizzle mongoose sequelize</code></li>
+        <li>retries <code>@nestjs/resilience</code></li>
+        <li>also: mail, storage, i18n, locks, outbox, webhooks, graphql, websockets, microservices</li>
+      </ul>
+    </section>
+
+    <section class="box">
+      <h2>Do</h2>
+      <ul>
+        <li>One module per feature, thin controllers</li>
+        <li>DTO or schema on every input</li>
+        <li>Throw HTTP exceptions, format in one filter</li>
+        <li>Return response shapes, not raw DB rows</li>
+        <li>Paginate lists, transaction on multi-step writes</li>
+        <li><code>app.enableShutdownHooks()</code> and a health endpoint</li>
+      </ul>
+    </section>
+
+    <section class="box">
+      <h2>Avoid</h2>
+      <ul>
+        <li><code>new Service()</code>: inject instead</li>
+        <li>Business logic in controllers</li>
+        <li><code>@Global</code> and <code>forwardRef</code> as shortcuts</li>
+        <li>Scattered <code>process.env</code></li>
+        <li>Adding a library before checking Nest's own packages</li>
+      </ul>
+    </section>
+
+    <section class="box">
+      <h2>Quick fixes</h2>
+      <div class="table-scroll"><table>
+        <tr><td>Can't resolve dependencies</td><td>Provider not in <code>providers</code>, or not exported / imported</td></tr>
+        <tr><td>Cannot GET /x</td><td>Missing <code>/api</code> prefix</td></tr>
+        <tr><td>Body is <code>{}</code></td><td>DTO field has no decorator</td></tr>
+        <tr><td>Number arrives as string</td><td><code>transform: true</code> or Parse pipe</td></tr>
+        <tr><td>Cannot find module</td><td>Import missing <code>.js</code> (ESM)</td></tr>
+      </table></div>
+    </section>
+
+    <section class="box">
+      <h2>ESM</h2>
+      <ul>
+        <li>Imports end in <code>.js</code></li>
+        <li><code>import.meta.dirname</code>, no <code>__dirname</code></li>
+        <li><code>vi.fn()</code>, not <code>jest.fn()</code></li>
+      </ul>
+    </section>
+
+  </div>
+  <footer class="noprint">Docs index: <a href="https://docs.nestjs.com/llms.txt" target="_blank" rel="noopener">docs.nestjs.com/llms.txt</a></footer>
+</div>
+
+<script>
+  // Colour the code in one pass so comments, strings and decorators never nest.
+  document.querySelectorAll('pre code').forEach(function (block) {
+    var text = block.textContent.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    block.innerHTML = text.replace(/(\/\/.*$)|('[^'\n]*')|(@[A-Za-z]+)/gm, function (m, comment, str) {
+      if (comment) return '<span class="c">' + m + '</span>';
+      if (str) return '<span class="s">' + m + '</span>';
+      return '<span class="d">' + m + '</span>';
+    });
+  });
+</script>
+</body>
+</html>
